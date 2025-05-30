@@ -1,0 +1,25 @@
+{
+  "name": "fcm-push-sender-app",
+  "version": "1.0.0",
+  "description": "A local server and UI to send FCM push notifications.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [
+    "fcm",
+    "push",
+    "notification",
+    "nodejs",
+    "express",
+    "firebase"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.8",
+    "body-parser": "^1.20.2",
+    "express": "^4.19.2",
+    "google-auth-library": "^9.10.0"
+  }
+}

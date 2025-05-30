@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FCM Push Sender</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom scrollbar for better aesthetics in the result pre tag */
+    pre::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    pre::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+
+    pre::-webkit-scrollbar-thumb {
+      background: #888;
+      border-radius: 10px;
+    }
+
+    pre::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+
+    /* Basic body styling */
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+  </style>
+</head>
+
+<body
+  class="bg-gradient-to-br from-slate-900 to-slate-700 min-h-screen flex items-center justify-center p-4 selection:bg-sky-500 selection:text-white">
+  <div class="container bg-slate-800 text-slate-200 p-6 sm:p-8 md:p-10 rounded-xl shadow-2xl w-full max-w-2xl">
+    <h2
+      class="text-3xl sm:text-4xl font-bold text-center mb-8 bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-cyan-300">
+      Send Push Notification
+    </h2>
+    <form id="pushForm" class="space-y-6">
+      <div>
+        <label for="title" class="block text-sm font-medium text-sky-300 mb-1">Title:</label>
+        <input type="text"
+          class="form-input w-full bg-slate-700 border-slate-600 text-slate-200 rounded-lg shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition duration-150 ease-in-out py-3 px-4"
+          id="title" name="title" placeholder="Enter notification title" />
+      </div>
+
+      <div>
+        <label for="body" class="block text-sm font-medium text-sky-300 mb-1">Body:</label>
+        <input type="text"
+          class="form-input w-full bg-slate-700 border-slate-600 text-slate-200 rounded-lg shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition duration-150 ease-in-out py-3 px-4"
+          id="body" name="body" placeholder="Enter notification body" />
+      </div>
+
+      <div>
+        <label for="imageSource" class="block text-sm font-medium text-sky-300 mb-1">Image:</label>
+        <select
+          class="form-select w-full bg-slate-700 border-slate-600 text-slate-200 rounded-lg shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition duration-150 ease-in-out py-3 px-4"
+          id="imageSource" name="imageSource">
+          <option value="">No Image</option>
+        </select>
+        <input type="text" id="imageUrlManual" placeholder="Or paste custom image URL here"
+          class="form-input w-full bg-slate-700 border-slate-600 text-slate-200 rounded-lg shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition duration-150 ease-in-out py-3 px-4 mt-2" />
+      </div>
+
+      <div>
+        <label for="customData" class="block text-sm font-medium text-sky-300 mb-1">Custom Data (JSON):</label>
+        <textarea
+          class="form-textarea w-full bg-slate-700 border-slate-600 text-slate-200 rounded-lg shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition duration-150 ease-in-out py-3 px-4 h-32 resize-none"
+          id="customData" name="customData"
+          placeholder='e.g., { "project_id": 5, "type": "page" }'>{ "custom_data": { "project_id": 5, "type": "page", "type_id": 7795 }, "custom_config": { "vibrate": 1 } } </textarea>
+        <p id="jsonError" class="text-red-400 text-xs mt-1 hidden">Invalid JSON format.</p>
+      </div>
+
+      <div>
+        <label for="token" class="block text-sm font-medium text-sky-300 mb-1">Device Token:</label>
+        <select
+          class="form-select w-full bg-slate-700 border-slate-600 text-slate-200 rounded-lg shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition duration-150 ease-in-out py-3 px-4"
+          id="token" name="token">
+          <option value="" disabled selected>Loading tokens...</option>
+        </select>
+        <input type="text" id="tokenManual" placeholder="Paste device token here"
+          class="form-input w-full bg-slate-700 border-slate-600 text-slate-200 rounded-lg shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition duration-150 ease-in-out py-3 px-4 mt-2" />
+      </div>
+
+      <div>
+        <label for="sound" class="block text-sm font-medium text-sky-300 mb-1">Sound:</label>
+        <select
+          class="form-select w-full bg-slate-700 border-slate-600 text-slate-200 rounded-lg shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition duration-150 ease-in-out py-3 px-4"
+          id="sound" name="sound">
+          <option value="default" class="bg-slate-700 text-slate-200" selected>Default</option>
+          <option value="Sound 1.mp3" class="bg-slate-700 text-slate-200">Sound 1</option>
+          <option value="Sound 2.mp3" class="bg-slate-700 text-slate-200">Sound 2</option>
+          <option value="Sound 3.mp3" class="bg-slate-700 text-slate-200">Sound 3</option>
+          <option value="Sound 4.mp3" class="bg-slate-700 text-slate-200">Sound 4</option>
+          <option value="Sound 5.mp3" class="bg-slate-700 text-slate-200">Sound 5</option>
+          <option value="Sound 6.wav" class="bg-slate-700 text-slate-200">Sound 6</option>
+          <option value="silent" class="bg-slate-700 text-slate-200">Silent</option>
+        </select>
+      </div>
+
+      <div class="pt-4">
+        <button type="submit" id="sendButton"
+          class="w-full bg-gradient-to-r from-sky-500 to-cyan-500 hover:from-sky-600 hover:to-cyan-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-opacity-75 transition duration-150 ease-in-out transform hover:scale-105">
+          Send Push
+        </button>
+      </div>
+    </form>
+
+    <hr class="my-8 border-slate-600">
+
+    <div>
+      <h3 class="text-xl font-semibold text-sky-300 mb-3">Result:</h3>
+      <pre id="result"
+        class="bg-slate-900 p-4 rounded-lg text-sm text-slate-300 whitespace-pre-wrap break-all max-h-60 overflow-y-auto border border-slate-700 shadow-inner">Awaiting submission...</pre>
+    </div>
+
+    <div id="messageModal"
+      class="fixed inset-0 bg-slate-900 bg-opacity-75 flex items-center justify-center p-4 hidden z-50 transition-opacity duration-300 ease-in-out">
+      <div
+        class="bg-slate-800 p-6 rounded-lg shadow-xl max-w-sm w-full transform transition-all duration-300 ease-in-out scale-95 opacity-0"
+        id="messageModalContent">
+        <h4 id="messageModalTitle" class="text-lg font-semibold text-sky-400 mb-3">Notification</h4>
+        <p id="messageModalText" class="text-slate-300 mb-4">Message goes here.</p>
+        <button id="messageModalClose"
+          class="w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 transition duration-150">
+          OK
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const form = document.getElementById("pushForm");
+    const resultDisplay = document.getElementById('result');
+    const customDataTextarea = document.getElementById('customData');
+    const jsonErrorDisplay = document.getElementById('jsonError');
+    const sendButton = document.getElementById('sendButton');
+    const tokenSelect = document.getElementById('token');
+    const tokenManualInput = document.getElementById('tokenManual');
+    const soundSelect = document.getElementById('sound');
+    const imageSourceSelect = document.getElementById('imageSource'); // Renamed from imageNameSelect
+    const imageUrlManualInput = document.getElementById('imageUrlManual'); // New manual image URL input
+
+    // Modal elements (same as before)
+    const messageModal = document.getElementById('messageModal');
+    const messageModalContent = document.getElementById('messageModalContent');
+    const messageModalTitle = document.getElementById('messageModalTitle');
+    const messageModalText = document.getElementById('messageModalText');
+    const messageModalClose = document.getElementById('messageModalClose');
+
+    // Array of image objects (imageName and url)
+    // You can fetch this dynamically from your Google Sheet or a separate API if preferred.
+    const predefinedImages = [
+      { name: "Fish Banner", url: "https://static.virtukiosk.in/project/file/20250514-095355-wubg-image-400.jpg" },
+      { name: "Garder Banner", url: "https://static.virtukiosk.in/project/file/20250514-095346-c04j-image-389.jpg" },
+      { name: "Royal Lion", url: "https://static.virtukiosk.in/project/file/20250514-095338-wkph-image-379.jpg" },
+      { name: "Lotus", url: "https://static.virtukiosk.in/project/file/20250514-095342-l2kx-image-384.jpg" },
+      // Add more image objects here as needed
+    ];
+
+
+    // Function to populate the image dropdown
+    function populateImageDropdown() {
+      // Clear existing options, keep the "No Image"
+      imageSourceSelect.innerHTML = '<option value="">No Image</option>';
+      predefinedImages.forEach(image => {
+        const option = document.createElement('option');
+        option.value = image.url; // Use the URL as the option value
+        option.textContent = image.name; // Display the image name
+        imageSourceSelect.appendChild(option);
+      });
+    }
+
+    // Call populateImageDropdown on page load
+    document.addEventListener('DOMContentLoaded', populateImageDropdown);
+
+
+    // Function to show the modal (same as before)
+    function showModal(title, text) {
+      messageModalTitle.textContent = title;
+      messageModalText.textContent = text;
+      messageModal.classList.remove('hidden');
+      setTimeout(() => {
+        messageModal.classList.remove('opacity-0');
+        messageModalContent.classList.remove('scale-95', 'opacity-0');
+        messageModalContent.classList.add('scale-100', 'opacity-100');
+      }, 10);
+    }
+
+    // Function to hide the modal (same as before)
+    function hideModal() {
+      messageModalContent.classList.remove('scale-100', 'opacity-100');
+      messageModalContent.classList.add('scale-95', 'opacity-0');
+      messageModal.classList.add('opacity-0');
+      setTimeout(() => {
+        messageModal.classList.add('hidden');
+      }, 300);
+    }
+
+    messageModalClose.addEventListener('click', hideModal);
+    messageModal.addEventListener('click', (event) => {
+      if (event.target === messageModal) {
+        hideModal();
+      }
+    });
+
+    // Sync token select and manual input
+    tokenSelect.addEventListener('change', () => {
+      tokenManualInput.value = tokenSelect.value;
+    });
+
+    tokenManualInput.addEventListener('input', () => {
+      tokenSelect.value = "";
+    });
+
+    // New: Sync image dropdown and manual URL input
+    imageSourceSelect.addEventListener('change', () => {
+      imageUrlManualInput.value = imageSourceSelect.value; // Set manual input to selected URL
+    });
+
+    imageUrlManualInput.addEventListener('input', () => {
+      imageSourceSelect.value = ""; // Deselect dropdown if manual input changes
+    });
+
+
+    // Validate JSON in customData field on input
+    customDataTextarea.addEventListener('input', () => {
+      const data = customDataTextarea.value.trim();
+      if (data === "") {
+        jsonErrorDisplay.classList.add('hidden');
+        customDataTextarea.classList.remove('border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
+        customDataTextarea.classList.add('border-slate-600', 'focus:border-sky-500', 'focus:ring-sky-500');
+        return;
+      }
+      try {
+        JSON.parse(data);
+        jsonErrorDisplay.classList.add('hidden');
+        customDataTextarea.classList.remove('border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
+        customDataTextarea.classList.add('border-slate-600', 'focus:border-sky-500', 'focus:ring-sky-500');
+      } catch (e) {
+        jsonErrorDisplay.classList.remove('hidden');
+        customDataTextarea.classList.add('border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
+        customDataTextarea.classList.remove('border-slate-600', 'focus:border-sky-500', 'focus:ring-sky-500');
+      }
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      let selectedToken = tokenSelect.value;
+      if (tokenManualInput.value.trim() !== "") {
+        selectedToken = tokenManualInput.value.trim();
+      }
+
+      if (!selectedToken) {
+        showModal('Validation Error', 'Please select or enter a device token.');
+        return;
+      }
+
+      resultDisplay.textContent = 'Sending...';
+      sendButton.disabled = true;
+      sendButton.classList.add('opacity-50', 'cursor-not-allowed');
+
+      // Determine the image URL to send
+      let finalImageUrl = imageUrlManualInput.value.trim();
+      if (finalImageUrl === "" && imageSourceSelect.value !== "") {
+        // If manual input is empty, but dropdown has a selection, use dropdown's value (which is already the URL)
+        finalImageUrl = imageSourceSelect.value;
+      }
+
+      const dataToSend = {
+        title: form.title.value,
+        body: form.body.value,
+        token: selectedToken,
+        sound: soundSelect.value,
+        imageUrl: finalImageUrl, // Send the resolved image URL
+      };
+
+      // Validate and parse customData
+      let customDataObject = {};
+      const customDataValue = customDataTextarea.value.trim();
+      if (customDataValue !== "") {
+        try {
+          customDataObject = JSON.parse(customDataValue);
+        } catch (err) {
+          resultDisplay.textContent = '';
+          showModal('Error', 'Invalid JSON in Custom Data: ' + err.message);
+          jsonErrorDisplay.classList.remove('hidden');
+          customDataTextarea.classList.add('border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
+          customDataTextarea.classList.remove('border-slate-600', 'focus:border-sky-500', 'focus:ring-sky-500');
+          sendButton.disabled = false;
+          sendButton.classList.remove('opacity-50', 'cursor-not-allowed');
+          return;
+        }
+      }
+      dataToSend.customData = customDataObject;
+
+      try {
+        const response = await fetch('/send-push', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(dataToSend)
+        });
+
+        const result = await response.json();
+        resultDisplay.textContent = JSON.stringify(result, null, 2);
+
+        if (result.success) {
+          showModal('Success', result.message);
+        } else {
+          showModal('Error', result.error || 'Failed to send push notification.');
+        }
+
+      } catch (err) {
+        resultDisplay.textContent = '';
+        showModal('Error', 'Network or Server Error: ' + err.message);
+        console.error("Fetch error:", err);
+      } finally {
+        sendButton.disabled = false;
+        sendButton.classList.remove('opacity-50', 'cursor-not-allowed');
+      }
+    });
+
+    // --- Google Sheet Integration ---
+    const getSheetData = ({ sheetID, sheetName, query, callback }) => {
+      const base = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?`;
+      const url = `${base}&sheet=${encodeURIComponent(sheetName)}&tq=${encodeURIComponent(query)}`;
+      fetch(url)
+        .then((res) => res.text())
+        .then((response) => {
+          callback(responseToObjects(response));
+        })
+        .catch(error => {
+          console.error("Error fetching sheet data:", error);
+          showModal('Error', 'Failed to load device tokens from Google Sheet. Please check the sheet ID and network connection.');
+          tokenSelect.innerHTML = '<option value="" disabled selected>Error loading tokens</option>';
+        });
+
+      function responseToObjects(res) {
+        const jsData = JSON.parse(res.substring(47).slice(0, -2));
+        let data = [];
+        const columns = jsData.table.cols;
+        const rows = jsData.table.rows;
+        let rowObject;
+        let cellData;
+        let propName;
+        for (let r = 0, rowMax = rows.length; r < rowMax; r++) {
+          rowObject = {};
+          for (let c = 0, colMax = columns.length; c < colMax; c++) {
+            cellData = rows[r]["c"][c];
+            propName = columns[c].label;
+            if (cellData === null) {
+              rowObject[propName] = "";
+            } else if (
+              typeof cellData["v"] == "string" &&
+              cellData["v"].startsWith("Date")
+            ) {
+              rowObject[propName] = new Date(cellData["f"]);
+            } else {
+              rowObject[propName] = cellData["v"];
+            }
+          }
+          data.push(rowObject);
+        }
+        return data;
+      }
+    };
+
+    // Load tokens from Google Sheet on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      const SHEET_ID = '----'; // Your actual sheet ID
+      const SHEET_NAME = 'Sheet'; // Your actual sheet name
+
+      getSheetData({
+        sheetID: SHEET_ID,
+        sheetName: SHEET_NAME,
+        query: 'SELECT B, C', // Select the 'Title' and 'Sub Title' columns
+        callback: (data) => {
+          tokenSelect.innerHTML = '<option value="" disabled selected>Select or paste a Device Token</option>'; // Clear existing options
+
+          // Add a default option if no tokens are loaded
+          if (data.length === 0) {
+            tokenSelect.innerHTML += '<option value="" disabled>No tokens found in sheet</option>';
+            return;
+          }
+
+          data.forEach(row => {
+            const title = row['Title'];
+            const deviceToken = row['Sub Title']; // Assuming 'Sub Title' is the device token column
+            if (title && deviceToken) {
+              const option = document.createElement('option');
+              option.value = deviceToken;
+              option.textContent = title;
+              tokenSelect.appendChild(option);
+            }
+          });
+
+          // Pre-select the first valid token if available
+          if (tokenSelect.options.length > 1) { // If there are options beyond the initial disabled one
+            tokenSelect.selectedIndex = 1; // Select the first actual token
+            tokenManualInput.value = tokenSelect.value; // Also set the manual input
+          }
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>
